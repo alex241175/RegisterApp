@@ -1,0 +1,15 @@
+@page "/report"
+@inject IJSRuntime jsRuntime
+
+<PageTitle>報表</PageTitle>
+
+<h1>報表</h1>
+<div id="output"></div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await jsRuntime.InvokeVoidAsync("pivot");
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

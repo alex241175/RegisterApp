@@ -1,0 +1,81 @@
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">@( EventObj.EventId == 0 ? "新增課程" : "修改課程 " + EventObj.EventId)</h4>
+                <button type="button" class="close" @onclick=@ModalCancel>&times;</button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="title" class="col-form-label">課程:</label>                            
+                        <select class="form-select" @bind="EventObj.Class">
+                            @foreach (var c in Classes)
+                            {
+                                <option value="@c">@c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="title" class="col-form-label">主題:</label>                            
+                        <input type="text" class="form-control" id="title" @bind="EventObj.Title" autocomplete="off">
+                    </div>
+                     <div class="form-group">
+                        <label for="start" class="col-form-label">開始:</label>                            
+                        <input type="datetime-local" class="form-control" id="start" @bind-value="EventObj.Start" autocomplete="off" >
+                    </div>
+                     <div class="form-group">
+                        <label for="end" class="col-form-label">結束:</label>                            
+                        <input type="datetime-local" class="form-control" id="end" @bind="EventObj.End" autocomplete="off">
+                    </div>
+                     <div class="form-group">
+                        <label for="location" class="col-form-label">地點:</label>                            
+                        <input type="text" class="form-control" id="location" @bind="EventObj.Location" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="head" class="col-form-label">班負責:</label>                            
+                        <input type="text" class="form-control" id="head" @bind="EventObj.Head" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="speaker" class="col-form-label">講員:</label>                            
+                        <input type="text" class="form-control" id="speaker" @bind="EventObj.Speaker" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="service" class="col-form-label">服務:</label>                            
+                        <input type="text" class="form-control" id="service" @bind="EventObj.Service" autocomplete="off">
+                    </div>
+                     <div class="form-group">
+                        <label for="remark" class="col-form-label">備註:</label>                            
+                        <input type="text" class="form-control" id="remark" @bind="EventObj.Remark" autocomplete="off">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick=@ModalSave>Save</button>
+                <button type="button" class="btn btn-primary" @onclick=@ModalCancel>Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code{
+
+    private List<string> Classes {get; set; } = new List<string>(){"壇人班","學人班","正啟班", "活動","課程"};
+
+    [Parameter]
+    public RegisterApp.Data.Event EventObj { get; set;}
+
+    [Parameter]
+    public EventCallback<bool> OnClose {get;set;}
+    [Parameter]
+    public EventCallback<Event> OnSave {get;set;}
+
+    private Task ModalCancel()
+    {
+        return OnClose.InvokeAsync(false);
+    }
+    private Task ModalSave()
+    {
+        return OnSave.InvokeAsync(EventObj);
+    }
+}

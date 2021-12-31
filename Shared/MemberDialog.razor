@@ -1,0 +1,44 @@
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+               <form class="form">
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" value="男" checked='@(member.Gender == "男")' @onchange='(() => { member.Gender = "男" ;})'>男
+                        </label>
+                        <label>
+                            <input type="radio" value="女" checked='@(member.Gender == "女")' @onchange='(() => { member.Gender = "女" ;})'>女
+                        </label>
+                    </div>
+                    <div class="form-group mt-2">
+                        <input type="text" size="10" class="form-control" @bind="member.Name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick=@ModalSave>更新</button>
+                <button type="button" class="btn btn-primary" @onclick=@ModalCancel>取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code{
+    [Parameter]
+    public EventMember member { get; set;}
+
+    [Parameter]
+    public EventCallback<bool> OnClose {get;set;}
+    [Parameter]
+    public EventCallback<EventMember> OnSave {get;set;}
+
+    private Task ModalCancel()
+    {
+        return OnClose.InvokeAsync(false);
+    }
+    private Task ModalSave()
+    {
+        return OnSave.InvokeAsync(member);
+    }
+}

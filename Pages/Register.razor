@@ -1,0 +1,345 @@
+@layout EmptyLayout
+@page "/register/{EventId:int}"
+@inject DatabaseContext DbContext
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+@if (IsNotOver){
+    <PageTitle>報名：@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))</PageTitle>
+    <HeadContent>
+    <meta property="og:title" content='@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))' />
+    <meta property="og:description" content=">>請點進去報名" />
+    <meta property="og:image" content="" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@(NavigationManager.BaseUri)good-content" />
+    <meta property="og:site_name" content="課程報名系統" />
+    </HeadContent>
+
+    <div class="card">
+        <div class="card-body">
+            <h4>@("[" + eventObj.Class + "] " + eventObj.Title)</h4>
+            <span>@(eventObj.Start != null ? eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mmtt") : "")</span>
+            <span>@(eventObj.End != null ? " 至 " + eventObj.End.Value.AddHours(8).ToString("h:mmtt") : "")</span>
+            <span>@(eventObj.Start != null ? "(" + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1) + ")" : "")</span>
+            <span>@(eventObj.Location)</span><br>
+            <small>@eventObj.Remark</small>
+        </div>
+    </div>
+
+    <div class="mt-2 p-2 input-group">
+        <div class="form-check form-check-inline">
+            <label class="form-check-label" for="inlineRadio1">男</label>
+            <input class="form-check-input" type="radio" id="inlineRadio1" value="男" checked='@(memberModel.Gender == "男")' @onchange='(() => { memberModel.Gender = "男" ;})'>
+        </div>
+            <div class="form-check form-check-inline">   
+            <label class="form-check-label" for="inlineRadio2">女</label>
+            <input class="form-check-input" type="radio" id="inlineRadio2" value="女" checked='@(memberModel.Gender == "女")' @onchange='(() => { memberModel.Gender = "女" ;})'>
+        </div>    
+        <RadzenAutoComplete Data=@memberlist TextProperty="Name" Change="OnChange" Placeholder="輸入姓名" @bind-Value="memberModel.Name" Style="Width:65%;"/>
+    </div>
+    <div>
+        <button class="btn btn-secondary" @onclick="OnRegister">報名</button>
+    </div>
+
+    @if (MemberDialogOpen)
+    {
+        <MemberDialog member="member" OnClose="OnMemberDialogClose" OnSave="OnSave" />
+    }
+    @if (DeleteDialogOpen)
+    {
+        <DeleteDialog ConfirmationMessage='@("是不是要刪除[" + member.Name + "]?")' OnClose="OnDeleteDialogClose" OnDelete="OnDelete" />
+    }
+
+
+    @if (members != null)
+    {
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th class="hand" @onclick="@(()=> { sortBy = ""; })">
+                        No<span class='fas @(SetSortIcon("")) right'></span>
+                    </th>
+                    <th class="hand" @onclick="@(()=> { sortBy = "Gender"; })">
+                        性別<span class='fas @(SetSortIcon("Gender")) right'></span>
+                    </th>
+                    <th class="hand" @onclick="@(()=> { sortBy = "Name"; })">
+                        姓名<span class='fas @(SetSortIcon("Name")) right'></span>
+                    </th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (m , pos) in filteredMembers.Select((value, i) => (value, i)))
+                {
+                    <tr>
+                        <td class="noselect">@( pos + 1 ) </td>
+                        <td class="noselect">@m.Gender</td>
+                        <td class="hand noselect" @onclick="() => OnMemberDialogOpen(m)">@m.Name</td>
+                        <td>
+                            @if(ShowMore){
+                                <input class="form-check-input" type="checkbox" checked="@(m.Attended)" @onchange="()=> OnAttend(m)">
+                            }
+                        </td>
+                        <td>
+                            <button @onclick="() => OnDeleteDialogOpen(m)"><span class="oi oi-x"></span></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div>
+            <span>男： @filteredMembers.Where( x=>x.Gender == "男").Count()</span>
+            <span class="mx-2">女： @filteredMembers.Where( x=>x.Gender == "女").Count()</span>
+            <span>共： @filteredMembers.Count()</span>
+        </div>
+    }
+
+    <div class="mt-4" @onclick="OnShowMore"><span class='fas @(SetShowMoreIcon())'></span></div>
+
+}else{
+
+    <p>此課程己經過期了。</p>
+}
+
+@if(ShowMore){
+    <div class="mt-2 p-2 input-group">
+        <div class="form-check form-check-inline">
+            <label class="form-check-label" for="inlineRadio1">全</label>
+            <input class="form-check-input" type="radio" id="inlineRadio1" value="全" checked='@(filter == "全")' @onchange='(() => { filter = "全" ;})'>
+        </div>
+        <div class="form-check form-check-inline">
+            <label class="form-check-label" for="inlineRadio1">出</label>
+            <input class="form-check-input" type="radio" id="inlineRadio1" value="出" checked='@(filter == "出")' @onchange='(() => { filter = "出" ;})'>
+        </div>
+        <div class="form-check form-check-inline">
+            <label class="form-check-label" for="inlineRadio1">缺</label>
+            <input class="form-check-input" type="radio" id="inlineRadio1" value="缺" checked='@(filter == "缺")' @onchange='(() => { filter = "缺" ;})'>
+        </div>
+
+    </div>
+    <div class="mt-2">
+        <button class="btn btn-secondary" @onclick="OnExportCsv">輸出CSV</button>
+    </div>
+}
+
+@code{
+    
+    EventMember memberModel= new EventMember();   
+    private bool MemberDialogOpen { get; set; }
+    private bool DeleteDialogOpen { get; set; }
+    private bool ShowMore {get;set;}
+    private bool IsNotOver {get;set;} = true;
+    private string filter = "全";
+    private string sortBy = "";
+    private EventMember member { get; set;}
+    private string ogTitle ;
+    IEnumerable<EventMember> memberlist;
+
+    [Parameter]
+    public int EventId {get;set;}
+    private ElementReference nameRef;
+    CultureInfo culture = new CultureInfo("zh-TW");
+
+    public List<EventMember> members = default!;
+    private RegisterApp.Data.Event eventObj = new RegisterApp.Data.Event(){};
+    protected override async Task OnInitializedAsync()
+    {
+        eventObj = await DbContext.Events.FindAsync(EventId);
+        if (eventObj.Start < DateTime.Today){
+            IsNotOver = false;
+        }
+        members = await DbContext.EventMembers.Where(x => x.EventId == EventId).ToListAsync();
+        //memberlist = (from m in DbContext.EventMembers select m).Distinct().ToList();
+        GetMemberList(); //for AutoComplete
+        memberModel.Gender = "男";
+        
+    }
+
+    List<EventMember> filteredMembers {
+        get {
+            var result = members.AsEnumerable();
+            if (filter == "出"){
+                result = result.Where( x => x.Attended == true);
+            }
+            if (filter == "缺"){
+                result = result.Where( x => x.Attended == false);
+            }
+            if (sortBy == "Gender"){
+                result = result.OrderByDescending(x => x.Gender);
+            }
+            if (sortBy == "Name"){
+                result = result.OrderBy(x => x.Name, StringComparer.Create(culture, false));
+            }
+            return result.ToList();
+        }
+    }
+
+    private string SetSortIcon(string columnName)
+    {
+        if (sortBy != columnName)
+        {
+            return string.Empty;
+        }else{     
+            return "fa-sort-down";
+        }
+    }
+
+    public string SetShowMoreIcon()
+    {
+        if (ShowMore)
+        {
+            return "fa-sort-up";
+        }else{     
+            return "fa-sort-down";
+        }
+    }
+    protected void GetMemberList(){
+        //get unique members from EventMembers table
+        var memberAll = DbContext.EventMembers.GroupBy(x => x.Name).Select(x => x.First()).AsEnumerable();
+        //filter those members not registered yet in current class
+        memberlist = memberAll.Where(x => members.All(y => y.Name != x.Name)).ToList();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // await nameRef.FocusAsync();
+        }
+    }
+
+    void OnChange(object value)
+    {
+        //Console.WriteLine($"Value changed to {value}");
+        string Name = (string)value;
+        memberModel.Name = Name;
+        var gender = memberlist.Where(x => x.Name == Name).Select(x => x.Gender);
+        if (gender.Any()){
+            memberModel.Gender = gender.Single();
+        }
+    }
+    protected async Task OnRegister(){
+
+        if (!string.IsNullOrEmpty(memberModel.Name)){
+            EventMember obj = new EventMember(){
+                EventId = EventId,
+                Name = memberModel.Name.Trim(),
+                Gender = memberModel.Gender,
+                DateRegistered = DateTime.Now,
+                Attended = false
+            };
+            
+            await DbContext.EventMembers.AddAsync(obj);
+            await DbContext.SaveChangesAsync();
+            //update client
+            members.Add(obj);
+            memberModel.Name = "";
+            GetMemberList(); //for AutoComplete
+        }
+    }
+
+      protected async Task OnDelete(){
+  
+        DeleteDialogOpen = false;
+        EventMember obj = await DbContext.EventMembers.FindAsync(member.EventMemberId);
+        DbContext.EventMembers.Remove(obj);
+        await DbContext.SaveChangesAsync();
+        //update client
+        members.Remove(member);        
+        StateHasChanged();
+
+    }
+
+    protected void OnMemberDialogOpen(EventMember m){
+        member = m;
+        MemberDialogOpen = true;
+        StateHasChanged();
+    }
+
+    protected void OnMemberDialogClose()
+    {
+        MemberDialogOpen = false;
+        StateHasChanged();
+    }
+
+    protected void OnDeleteDialogOpen(EventMember m){
+        member = m;
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+
+    protected void OnDeleteDialogClose()
+    {
+        DeleteDialogOpen = false;
+        StateHasChanged();
+    }
+
+    private void OnShowMore()
+    {
+        ShowMore = !ShowMore;
+    }
+
+    private async Task OnSave()
+    {
+        MemberDialogOpen = false;
+        // Console.WriteLine(JsonConvert.SerializeObject(eventObj, Formatting.Indented));
+      
+        DbContext.EventMembers.Update(member);
+        await DbContext.SaveChangesAsync();
+
+        //update client 
+        var obj = members.FirstOrDefault(x => x.EventMemberId == member.EventMemberId);
+        obj = member;
+      
+        StateHasChanged();
+    }
+
+    private async Task OnAttend(EventMember m){
+        //toggle attendance status
+        EventMember obj = await DbContext.EventMembers.FindAsync(m.EventMemberId);
+        obj.Attended = !obj.Attended;
+        DbContext.EventMembers.Update(obj);
+        await DbContext.SaveChangesAsync();
+        //update client     
+        StateHasChanged();
+    }
+
+    protected async Task OnExportExcel(){
+
+        DataTable dt = new DataTable("Data");
+        dt.Columns.AddRange(
+            new DataColumn[3] {
+                new DataColumn("No"),
+                new DataColumn("Gender"),
+                new DataColumn("Name") 
+            });
+
+        @foreach (var (m , pos) in members.Select((value, i) => (value, i)))
+        {
+            dt.Rows.Add(pos, m.Gender, m.Name);
+        }
+        using (XLWorkbook wb = new XLWorkbook())
+        {
+            wb.Worksheets.Add(dt);
+            using (MemoryStream stream = new MemoryStream())
+            {
+                wb.SaveAs(stream);
+                var fileByte = stream.ToArray();  //Byte
+                await JSRuntime.InvokeAsync<object>("saveAsExcel","data.xlsx", fileByte);  //not working file cannot be open by Excel
+            }
+        }
+    }
+
+    protected async void OnExportCsv()
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine("Id, Gender, Name");
+        @foreach (var (m , pos) in members.Select((value, i) => (value, i)))
+        {
+           stringBuilder.AppendLine($"{pos + 1 }, {m.Gender}, {m.Name}");
+        }
+        var content = stringBuilder.ToString();
+        string fileName = eventObj.Class + "-" + eventObj.Title + eventObj.Start.Value.ToString("yyyyMMddyhhmm") + ".csv";
+        await JSRuntime.InvokeAsync<object>("saveAsCsv", fileName, content);
+    }
+}

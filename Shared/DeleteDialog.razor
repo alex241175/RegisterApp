@@ -1,0 +1,47 @@
+<div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">@ConfirmationTitle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                        @onclick="() => ModalClose()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @ConfirmationMessage
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        @onclick="() => ModalClose()">取消</button>
+                <button type="button" class="btn btn-danger"
+                        @onclick="() => ModalDelete()">刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code{ 
+    [Parameter]
+    public string ConfirmationTitle { get; set; } = "確定刪除";
+
+    [Parameter]
+    public string ConfirmationMessage { get; set; } 
+
+    [Parameter]
+    public EventCallback<bool> OnClose {get;set;}
+    [Parameter]
+    public EventCallback<bool> OnDelete {get;set;}
+
+    private Task ModalClose()
+    {
+        return OnClose.InvokeAsync(true);
+    }
+    private Task ModalDelete()
+    {
+        return OnDelete.InvokeAsync(true);
+    }
+
+
+}

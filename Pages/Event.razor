@@ -1,0 +1,191 @@
+@page "/event"
+@inject DatabaseContext DbContext
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>課程表</PageTitle>
+@if (Role == "Admin"){
+
+        <h1>課程表</h1>
+
+        <button class="btn btn-primary" @onclick="OnEventDialogOpen">新增</button>
+        @if (EventDialogOpen)
+        {
+            <EventDialog EventObj="eventObj" OnClose="OnEventDialogClose" OnSave="OnSave"/>
+        }
+
+        @if (events == null)
+        {
+            <p><em>Loading...</em></p>
+        }
+        else
+        {
+
+            <form class="form-inline my-4">
+                <div class="form-group">
+                    <label for="filterStart" class="mx-2">起始日期</label>
+                    <input type="date" id="filterStart" class="form-control" @bind="filterStart" @bind:event="oninput">
+                </div>
+                <div class="form-group">
+                    <label for="filterTitle" class="mx-2">課程</label>
+                    <input type="text" id="filterTitle" class="form-control" @bind="filterTitle" @bind:event="oninput">
+                </div>
+            </form>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>課程</th>
+                        <th>主題</th>
+                        <th>日期</th>
+                        <th>星期</th>
+                        <th>地點</th>
+                        <th>人數</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in filteredEvents)
+                    {
+                        <tr>
+                            <td>@e.Class</td>
+                            <td @onclick="() => OnEdit(e)" class="hand">@e.Title</td>
+                            <td>@(e.Start != null ? e.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") : "")</td>
+                            <td>@(e.Start != null ? e.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1) : "")</td>
+                            <td>@e.Location</td>
+                            <td>@( e.EventMembers !=null ? e.EventMembers.Count() : "")</td>
+                            <td>
+                                <button class="btn-sm btn-secondary" @onclick="() => CopyLink(e.EventId)">連接</button>
+                                <button class="btn-sm btn-secondary" @onclick="() => OnRegister(e.EventId)">報名</button>
+                                <button class="btn-sm btn-secondary" @onclick="() => OnDelete(e)">刪除</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+}else{
+    <p>you are not authorized to view this content </p>
+}
+
+@code 
+{
+    private ClaimsPrincipal? User;
+    private string? Role;
+    public bool EventDialogOpen { get; set; }
+
+     private DateTime filterStart = DateTime.Today;
+    private string filterTitle = "";
+
+    private RegisterApp.Data.Event eventObj = new RegisterApp.Data.Event(){
+        Class = "",
+        Title = "",
+        Start = null,
+        End = null,
+        Location = "",
+        Remark = "",
+        Entity = "士C"
+    };
+     private RegisterApp.Data.Event emptyEvent = new RegisterApp.Data.Event(){
+        Class = "課程",
+        Title = "",
+        Start = null,
+        End = null,
+        Location = "",
+        Remark = "",
+        Entity = "士C"
+    };
+
+    private List<RegisterApp.Data.Event> events = default!;
+    protected override async Task OnInitializedAsync()
+    {
+        events = await DbContext.Events.OrderBy(x => x.Start).ToListAsync();
+        
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        User = authState.User;
+        Role = User.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).SingleOrDefault(); 
+    }
+
+    List<RegisterApp.Data.Event> filteredEvents => events.AsEnumerable()
+        .Where(x => x.Start > filterStart)
+        .Where(x => x.Title.Contains(filterTitle))
+        .ToList();
+
+    protected void OnEventDialogOpen(){
+        eventObj = emptyEvent;
+        EventDialogOpen = true;
+        StateHasChanged();
+    }
+
+    private void OnEventDialogClose(bool accepted)
+    {
+        EventDialogOpen = false;
+        StateHasChanged();
+    }
+
+     protected async Task OnSave(){
+        EventDialogOpen = false;
+        //conver to UTC Time - save in database
+        if (eventObj.Start != null){
+            eventObj.Start = eventObj.Start.Value.AddHours(-8);
+        }
+        if (eventObj.End != null){
+            eventObj.End = eventObj.End.Value.AddHours(-8);
+        }
+        // Console.WriteLine(JsonConvert.SerializeObject(eventObj, Formatting.Indented));
+        if (eventObj.EventId == 0){  //adding
+            await DbContext.Events.AddAsync(eventObj);
+            await DbContext.SaveChangesAsync();
+            //update client
+            events.Add(eventObj);
+        }else{   //updating
+            DbContext.Events.Update(eventObj);
+            await DbContext.SaveChangesAsync();
+
+            //update client 
+            var obj = events.FirstOrDefault(x => x.EventId == eventObj.EventId);
+            obj = eventObj;
+        }
+        events.OrderBy(x => x.Start);
+        StateHasChanged();
+
+    }
+
+    protected async Task OnDelete(RegisterApp.Data.Event e){
+  
+        eventObj = await DbContext.Events.FindAsync(e.EventId);
+        DbContext.Events.Remove(eventObj);
+        await DbContext.SaveChangesAsync();
+        //update client
+        events.Remove(e);        
+        StateHasChanged();
+
+    }
+
+     protected void OnEdit(RegisterApp.Data.Event e){
+  
+        eventObj = e;
+        if (eventObj.Start != null){
+            eventObj.Start = eventObj.Start.Value.AddHours(8); //convert UTC to local time
+        }
+        if (eventObj.End != null){
+            eventObj.End = eventObj.End.Value.AddHours(8); //convert UTC to local time
+        }
+        EventDialogOpen = true;
+        StateHasChanged();
+
+    }
+    protected void OnRegister(int EventId){
+        NavigationManager.NavigateTo("/register/" + EventId);
+    }
+
+    protected async Task CopyLink(int EventId){
+        string Text = NavigationManager.BaseUri + "register/" + EventId; 
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", Text);
+    }
+
+
+
+}
+
