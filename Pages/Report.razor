@@ -1,15 +1,87 @@
 @page "/report"
+@inject DatabaseContext DbContext
 @inject IJSRuntime jsRuntime
 
 <PageTitle>報表</PageTitle>
 
 <h1>報表</h1>
+<form class="form-inline my-4">
+    <div class="form-group">
+            <label for="title" class="mx-2">課程:</label>                            
+            <select class="form-select form-control" @bind="filterClass">
+                 @foreach (var c in Classes)
+                {
+                    <option value="@c">@c</option>
+                }    
+            </select>
+    </div>
+    <div class="form-group">
+        <label for="filterStart" class="mx-2">從</label>
+        <input type="date" id="filterStart" class="form-control" @bind="filterStart">
+    </div>
+    <div class="form-group">
+        <label for="filterStart" class="mx-2">至</label>
+        <input type="date" id="filterStart" class="form-control" @bind="filterEnd">
+    </div>
+    <div class="form-group">
+        <label for="filterTitle" class="mx-2">主題</label>
+        <input type="text" id="filterTitle" class="form-control" @bind="filterTitle">
+    </div>
+    <div class="form-group">
+        <button type="button" class="btn btn-primary mx-2" @onclick=@RunReport>跑報表</button>
+    </div>
+</form>
+
 <div id="output"></div>
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private List<string> Classes {get; set; } = new List<string>(){"","壇人班","學人班","正啟班", "活動","課程"};
+    private DateTime filterStart = DateTime.Today;
+    private DateTime filterEnd = DateTime.Today;
+    private string filterTitle = "";
+    private string filterClass = "";
+    
+    public class Result
     {
-        await jsRuntime.InvokeVoidAsync("pivot");
-        await base.OnAfterRenderAsync(firstRender);
+        public string? Class { get; set; }
+        public string? Title { get; set; }
+        public DateTime? Start { get; set; }
+        public string? Date {get;set;}
+        public DateTime? End { get; set; }
+        public string? Speaker { get; set; }
+        public string? Gender { get; set; }
+        public string? Member { get; set; }
+    }
+    protected async void RunReport()
+    {
+        var events = from e in DbContext.Events
+        join m in DbContext.EventMembers on e.EventId equals m.EventId
+        orderby e.Start
+        select new Result {
+            Class = e.Class,
+            Title = e.Title,
+            Start = e.Start,
+            End = e.End,
+            Date = e.Start.Value.AddHours(8).ToString("dd/MM/yy"),
+            Speaker = e.Speaker,
+            Gender = m.Gender,
+            Member = m.Name
+        };
+
+        if (!string.IsNullOrWhiteSpace(filterClass)){
+            events = events.Where(x => x.Class == filterClass);
+        }
+        if (!string.IsNullOrWhiteSpace(filterTitle)){
+            events = events.Where(x => x.Title.Contains(filterTitle));
+        }
+        if (filterStart != null){
+            events = events.Where(x => x.Start >= filterStart);
+        }
+         if (filterEnd != null){
+            events = events.Where(x => x.End <= filterEnd);
+        }
+        var result = events.ToArray();
+        string data = System.Text.Json.JsonSerializer.Serialize(result);     
+        await jsRuntime.InvokeVoidAsync("pivot", data);
     }
 }

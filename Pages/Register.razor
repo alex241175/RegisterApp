@@ -49,6 +49,10 @@
     {
         <DeleteDialog ConfirmationMessage='@("是不是要刪除[" + member.Name + "]?")' OnClose="OnDeleteDialogClose" OnDelete="OnDelete" />
     }
+    @if (TextDialogOpen)
+    {
+        <TextDialog Text='@Text' OnClose="OnTextDialogClose" />
+    }
 
 
     @if (members != null)
@@ -121,6 +125,9 @@
     <div class="mt-2">
         <button class="btn btn-secondary" @onclick="OnExportCsv">輸出CSV</button>
     </div>
+      <div class="mt-2">
+        <button class="btn btn-secondary" @onclick="OnCopy">拷貝</button>
+    </div>
 }
 
 @code{
@@ -128,6 +135,8 @@
     EventMember memberModel= new EventMember();   
     private bool MemberDialogOpen { get; set; }
     private bool DeleteDialogOpen { get; set; }
+    private bool TextDialogOpen { get; set; }
+    private string Text {get;set;}
     private bool ShowMore {get;set;}
     private bool IsNotOver {get;set;} = true;
     private string filter = "全";
@@ -273,6 +282,11 @@
         DeleteDialogOpen = false;
         StateHasChanged();
     }
+    protected void OnTextDialogClose()
+    {
+        TextDialogOpen = false;
+        StateHasChanged();
+    }
 
     private void OnShowMore()
     {
@@ -339,7 +353,31 @@
            stringBuilder.AppendLine($"{pos + 1 }, {m.Gender}, {m.Name}");
         }
         var content = stringBuilder.ToString();
-        string fileName = eventObj.Class + "-" + eventObj.Title + eventObj.Start.Value.ToString("yyyyMMddyhhmm") + ".csv";
+        string fileName = eventObj.Class + "-" + eventObj.Title + eventObj.Start.Value.AddHours(8).ToString("yyyyMMddyhhmm") + ".csv";
         await JSRuntime.InvokeAsync<object>("saveAsCsv", fileName, content);
+    }
+
+      protected async Task OnCopy(){  //can work for chrome only
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine($"[{ eventObj.Class }] {eventObj.Title} \n { eventObj.Start.Value.AddHours(8).ToString("dd/MM/yyyy h:mm tt")} \n");
+        @foreach (var (m , pos) in members.OrderByDescending(x=>x.Gender).Select((value, i) => (value, i)))
+        {
+           stringBuilder.AppendLine($"{pos + 1 }. {m.Gender} {m.Name}");
+        }
+        stringBuilder.Append("\n");
+        stringBuilder.Append("男：" + members.Where( x=>x.Gender == "男").Count());
+        stringBuilder.Append(" 女：" + members.Where( x=>x.Gender == "女").Count());
+        stringBuilder.Append(" 共：" + members.Count());
+
+        Text = stringBuilder.ToString();
+
+        string browser = await JSRuntime.InvokeAsync<string>(identifier: "identifyBrowser");
+        
+        if (browser == "Apple Safari"){
+            TextDialogOpen = true;
+        }else{
+            await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", Text);
+        }
     }
 }

@@ -69,8 +69,15 @@
     <p>you are not authorized to view this content </p>
 }
 
+@if (TextDialogOpen)
+{
+    <TextDialog Text='@Text' OnClose="OnTextDialogClose" />
+}
+
 @code 
 {
+    private bool TextDialogOpen { get; set; }
+    private string Text {get;set;}
     private ClaimsPrincipal? User;
     private string? Role;
     public bool EventDialogOpen { get; set; }
@@ -180,11 +187,22 @@
         NavigationManager.NavigateTo("/register/" + EventId);
     }
 
-    protected async Task CopyLink(int EventId){
-        string Text = NavigationManager.BaseUri + "register/" + EventId; 
-        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", Text);
+    protected async Task CopyLink(int EventId){  //can work for chrome only
+        Text = NavigationManager.BaseUri + "register/" + EventId;
+
+        string browser = await JSRuntime.InvokeAsync<string>(identifier: "identifyBrowser");
+        if (browser == "Apple Safari"){
+            TextDialogOpen = true;
+        }else{
+            await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", Text);
+        } 
     }
 
+    protected void OnTextDialogClose()
+    {
+        TextDialogOpen = false;
+        StateHasChanged();
+    }
 
 
 }
