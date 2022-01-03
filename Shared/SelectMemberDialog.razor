@@ -1,0 +1,87 @@
+@inject DatabaseContext DbContext
+
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">請選擇班員：</h4>
+                <button type="button" class="close" @onclick=@ModalCancel><span class="oi oi-x"></span></button>
+            </div>
+            <div class="modal-body">
+                @if (MemberList != null)
+                {
+                    <table class="table mt-4">
+                        <thead>
+                            <tr>
+                                <th>性別</th>
+                                <th>姓名</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (m , pos) in MemberList.Select((value, i) => (value, i)))
+                            {
+                                <tr>
+                                    <td class="noselect">@m.Gender</td>
+                                    <td class="noselect">@m.Name</td>
+                                    <td>
+                                        <input class="form-check-input" type="checkbox" @bind="m.Selected">
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }else{
+                    <p>無資料</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick=@ModalSave>報名</button>
+                <button type="button" class="btn btn-primary" @onclick=@ModalCancel>取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code{
+    [Parameter]
+    public string Class { get; set;}
+    [Parameter]
+    public int EventId { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnClose {get;set;}
+    [Parameter]
+    public EventCallback<List<MemberChoice>> OnSave {get;set;}
+    IEnumerable<MemberChoice> MemberList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var memberAll = from e in DbContext.Events where e.Class == Class
+        join m in DbContext.EventMembers on e.EventId equals m.EventId
+        select new MemberChoice{ 
+            Name = m.Name,
+            Gender = m.Gender,
+            Selected = false,
+        };
+        //memberAll = memberAll.DistinctBy(x => x.Name);
+        var MemberAll = memberAll.GroupBy(x => x.Name).Select(x => x.First())
+        .AsEnumerable();
+
+        var registeredMembers = await DbContext.EventMembers.Where(x => x.EventId == EventId).ToListAsync();
+        //filter those members not registered yet in current class
+        MemberList = MemberAll.Where(x => registeredMembers.All(y => y.Name != x.Name)).ToList()
+        .OrderByDescending(x=>x.Gender)
+        .ThenBy(x => x.Name, StringComparer.Create(CultureInfo.CurrentCulture, false));
+
+        
+    }
+    private Task ModalCancel()
+    {
+        return OnClose.InvokeAsync(false);
+    }
+    private Task ModalSave()
+    {
+        List<MemberChoice> SelectedMembers = MemberList.Where( x => x.Selected).ToList();
+        return OnSave.InvokeAsync(SelectedMembers);
+    }
+}

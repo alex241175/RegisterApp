@@ -19,6 +19,23 @@ namespace RegisterApp.Data
         public string? Remark{get;set;}
         public string? Entity{get;set;}
         public virtual ICollection<EventMember>? EventMembers { get; set; }
+        public Event DeepCopy()
+        {
+            Event temp = (Event) this.MemberwiseClone();
+            temp.EventId = this.EventId;
+            temp.Class = this.Class;
+            temp.Title = this.Title;
+            temp.Start = this.Start;
+            temp.End = this.End;
+            temp.Location = this.Location;
+            temp.Head = this.Head;
+            temp.Speaker = this.Speaker;
+            temp.Service = this.Service;
+            temp.Remark = this.Remark;
+            temp.Entity = this.Entity;
+            temp.EventMembers = this.EventMembers;
+            return temp;
+        }
 
     }
 }

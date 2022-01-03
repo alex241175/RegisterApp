@@ -51,6 +51,7 @@
         public string? Speaker { get; set; }
         public string? Gender { get; set; }
         public string? Member { get; set; }
+        public int No { get; set; }
     }
     protected async void RunReport()
     {
@@ -58,6 +59,7 @@
         join m in DbContext.EventMembers on e.EventId equals m.EventId
         orderby e.Start
         select new Result {
+            No = e.EventId,
             Class = e.Class,
             Title = e.Title,
             Start = e.Start,
@@ -80,7 +82,9 @@
          if (filterEnd != null){
             events = events.Where(x => x.End <= filterEnd);
         }
-        var result = events.ToArray();
+        var result = events.AsEnumerable().OrderBy(x => x.Member, StringComparer.Create(CultureInfo.CurrentCulture, false))
+        .ToArray();
+
         string data = System.Text.Json.JsonSerializer.Serialize(result);     
         await jsRuntime.InvokeVoidAsync("pivot", data);
     }

@@ -35,6 +35,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>課程</th>
                         <th>主題</th>
                         <th>日期</th>
@@ -48,6 +49,7 @@
                     @foreach (var e in filteredEvents)
                     {
                         <tr>
+                            <td>@e.EventId</td>
                             <td>@e.Class</td>
                             <td @onclick="() => OnEdit(e)" class="hand">@e.Title</td>
                             <td>@(e.Start != null ? e.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") : "")</td>
@@ -128,6 +130,12 @@
     private void OnEventDialogClose(bool accepted)
     {
         EventDialogOpen = false;
+        if (eventObj.Start != null){
+            eventObj.Start = eventObj.Start.Value.AddHours(-8); //convert UTC to local time
+        }
+        if (eventObj.End != null){
+            eventObj.End = eventObj.End.Value.AddHours(-8); //convert UTC to local time
+        }
         StateHasChanged();
     }
 

@@ -39,9 +39,12 @@ window.pivot = function(data){
     $("#output").pivot(
         JSON.parse(data),
         {
-            rows: ["Date","Title","Speaker"],
+            rows: ["No","Date","Title","Speaker"],
             cols: ["Gender","Member"],
             sorters: {
+                "No": function(a,b){
+                  return a>b;
+                },
                 "Gender": function(a,b){
                   return a<b;
                 }

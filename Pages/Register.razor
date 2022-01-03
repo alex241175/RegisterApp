@@ -3,8 +3,9 @@
 @inject DatabaseContext DbContext
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-@if (IsNotOver){
+@if (IsNotOver || Role == "Admin"){
     <PageTitle>報名：@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))</PageTitle>
     <HeadContent>
     <meta property="og:title" content='@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))' />
@@ -38,22 +39,9 @@
         <RadzenAutoComplete Data=@memberlist TextProperty="Name" Change="OnChange" Placeholder="輸入姓名" @bind-Value="memberModel.Name" Style="Width:65%;"/>
     </div>
     <div>
-        <button class="btn btn-secondary" @onclick="OnRegister">報名</button>
+        <button class="btn btn-secondary" @onclick="RegisterSingle">報名</button>
+        <button class="btn btn-outline right" @onclick="@(()=> SelectMemberDialogOpen = true)">></button>
     </div>
-
-    @if (MemberDialogOpen)
-    {
-        <MemberDialog member="member" OnClose="OnMemberDialogClose" OnSave="OnSave" />
-    }
-    @if (DeleteDialogOpen)
-    {
-        <DeleteDialog ConfirmationMessage='@("是不是要刪除[" + member.Name + "]?")' OnClose="OnDeleteDialogClose" OnDelete="OnDelete" />
-    }
-    @if (TextDialogOpen)
-    {
-        <TextDialog Text='@Text' OnClose="OnTextDialogClose" />
-    }
-
 
     @if (members != null)
     {
@@ -86,7 +74,7 @@
                             }
                         </td>
                         <td>
-                            <button @onclick="() => OnDeleteDialogOpen(m)"><span class="oi oi-x"></span></button>
+                            <button @onclick="() => OnDeleteDialogOpen(m)" class="right"><span class="oi oi-x"></span></button>
                         </td>
                     </tr>
                 }
@@ -104,6 +92,23 @@
 }else{
 
     <p>此課程己經過期了。</p>
+}
+
+@if (MemberDialogOpen)
+{
+    <MemberDialog member="member" OnClose="OnMemberDialogClose" OnSave="OnSave" />
+}
+@if (DeleteDialogOpen)
+{
+    <DeleteDialog ConfirmationMessage='@("是不是要刪除[" + member.Name + "]?")' OnClose="OnDeleteDialogClose" OnDelete="OnDelete" />
+}
+@if (TextDialogOpen)
+{
+    <TextDialog Text='@Text' OnClose="OnTextDialogClose" />
+}
+@if (SelectMemberDialogOpen)
+{
+    <SelectMemberDialog Class="@eventObj.Class" EventId="@eventObj.EventId" OnClose="OnSelectMemberDialogClose"  OnSave="RegisterSelectedMembers"/>
 }
 
 @if(ShowMore){
@@ -132,10 +137,13 @@
 
 @code{
     
+    private ClaimsPrincipal? User;
+    private string? Role;
     EventMember memberModel= new EventMember();   
     private bool MemberDialogOpen { get; set; }
     private bool DeleteDialogOpen { get; set; }
     private bool TextDialogOpen { get; set; }
+    private bool SelectMemberDialogOpen { get; set; }
     private string Text {get;set;}
     private bool ShowMore {get;set;}
     private bool IsNotOver {get;set;} = true;
@@ -162,6 +170,10 @@
         //memberlist = (from m in DbContext.EventMembers select m).Distinct().ToList();
         GetMemberList(); //for AutoComplete
         memberModel.Gender = "男";
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        User = authState.User;
+        Role = User.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).SingleOrDefault(); 
         
     }
 
@@ -221,13 +233,14 @@
     {
         //Console.WriteLine($"Value changed to {value}");
         string Name = (string)value;
-        memberModel.Name = Name;
+        memberModel.Name = ChineseConverter.ToTraditional(Name);
         var gender = memberlist.Where(x => x.Name == Name).Select(x => x.Gender);
         if (gender.Any()){
             memberModel.Gender = gender.Single();
         }
     }
-    protected async Task OnRegister(){
+    
+    protected async Task RegisterSingle(){
 
         if (!string.IsNullOrEmpty(memberModel.Name)){
             EventMember obj = new EventMember(){
@@ -245,6 +258,28 @@
             memberModel.Name = "";
             GetMemberList(); //for AutoComplete
         }
+    }
+
+  
+    protected async Task RegisterSelectedMembers(List<MemberChoice> SelectedMembers){
+        SelectMemberDialogOpen = false;
+
+        @foreach (var m in SelectedMembers)        
+        {
+            EventMember obj = new EventMember(){
+                EventId = EventId,
+                Name = m.Name,
+                Gender = m.Gender,
+                DateRegistered = DateTime.Now,
+                Attended = false
+            };            
+            await DbContext.EventMembers.AddAsync(obj);
+            await DbContext.SaveChangesAsync();
+            //update client
+            members.Add(obj);
+        }
+        GetMemberList(); //for AutoComplete    
+        StateHasChanged();
     }
 
       protected async Task OnDelete(){
@@ -285,6 +320,11 @@
     protected void OnTextDialogClose()
     {
         TextDialogOpen = false;
+        StateHasChanged();
+    }
+    protected void OnSelectMemberDialogClose()
+    {
+        SelectMemberDialogOpen = false;
         StateHasChanged();
     }
 
