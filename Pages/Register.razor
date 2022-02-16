@@ -40,7 +40,7 @@
     </div>
     <div>
         <button class="btn btn-secondary" @onclick="RegisterSingle">報名</button>
-        <button class="btn btn-outline right" @onclick="@(()=> SelectMemberDialogOpen = true)">></button>
+        <button class="btn btn-sm right" @onclick="@(()=> SelectMemberDialogOpen = true)">選擇</button>
     </div>
 
     @if (members != null)
@@ -87,7 +87,7 @@
         </div>
     }
 
-    <div class="mt-4" @onclick="OnShowMore"><span class='fas @(SetShowMoreIcon())'></span></div>
+    <div class="mt-4 hand" @onclick="OnShowMore"><small>掛號</small><span class='mx-2 fas @(SetShowMoreIcon())'></span></div>
 
 }else{
 
