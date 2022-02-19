@@ -67,7 +67,10 @@
                     <tr>
                         <td class="noselect">@( pos + 1 ) </td>
                         <td class="noselect">@m.Gender</td>
-                        <td class="hand noselect" @onclick="() => OnMemberDialogOpen(m)">@m.Name</td>
+                        <td class="hand noselect" @onclick="() => OnMemberDialogOpen(m)">
+                            @m.Name<br>
+                            <span style="font-size:small;">@m.Remark</span>
+                        </td>
                         <td>
                             @if(ShowMore){
                                 <input class="form-check-input" type="checkbox" checked="@(m.Attended)" @onchange="()=> OnAttend(m)">

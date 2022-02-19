@@ -12,6 +12,7 @@ namespace RegisterApp.Data
         public string Name { get; set; }
         [Required(ErrorMessage = "請選擇性別。")]
         public string Gender { get; set; }
+        public string Remark { get; set; }
         public DateTime DateRegistered {get;set;}
         public bool Attended {get;set;}
 
