@@ -13,6 +13,7 @@
                     <table class="table mt-4">
                         <thead>
                             <tr>
+                                <th>地區</th>
                                 <th>性別</th>
                                 <th>姓名</th>
                                 <th></th>
@@ -22,6 +23,7 @@
                             @foreach (var (m , pos) in MemberList.Select((value, i) => (value, i)))
                             {
                                 <tr>
+                                    <td class="noselect">@m.School</td>
                                     <td class="noselect">@m.Gender</td>
                                     <td class="noselect">@m.Name</td>
                                     <td>
@@ -61,6 +63,7 @@
         select new MemberChoice{ 
             Name = m.Name,
             Gender = m.Gender,
+            School = m.School,
             Selected = false,
         };
         //memberAll = memberAll.DistinctBy(x => x.Name);

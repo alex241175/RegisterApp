@@ -92,3 +92,7 @@ a, .btn-link {
   .right {
       float:right;
   }
+
+  select.form-select {
+    height:35px !important;
+  }

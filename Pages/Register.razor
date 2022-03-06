@@ -6,6 +6,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 @if (IsNotOver || Role == "Admin"){
+    // page header
     <PageTitle>報名：@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))</PageTitle>
     <HeadContent>
     <meta property="og:title" content='@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))' />
@@ -16,6 +17,7 @@
     <meta property="og:site_name" content="課程報名系統" />
     </HeadContent>
 
+    // Event information
     <div class="card">
         <div class="card-body">
             <h4>@("[" + eventObj.Class + "] " + eventObj.Title)</h4>
@@ -27,6 +29,7 @@
         </div>
     </div>
 
+    // register input form
     <div class="mt-2 p-2 input-group">
         <div class="form-check form-check-inline">
             <label class="form-check-label" for="inlineRadio1">男</label>
@@ -36,13 +39,18 @@
             <label class="form-check-label" for="inlineRadio2">女</label>
             <input class="form-check-input" type="radio" id="inlineRadio2" value="女" checked='@(memberModel.Gender == "女")' @onchange='(() => { memberModel.Gender = "女" ;})'>
         </div>    
-        <RadzenAutoComplete Data=@memberlist TextProperty="Name" Change="OnChange" Placeholder="輸入姓名" @bind-Value="memberModel.Name" Style="Width:65%;"/>
+        <RadzenAutoComplete Data=@memberlist TextProperty="Name" Change="OnChange" Placeholder="輸入姓名" @bind-Value="memberModel.Name" Style="Width:40%;"/>
+        <select class="form-select ml-2 col-3" style="width:auto;" @bind="memberModel.School">
+            @foreach (string s in RegisterApp.Data.Config.Schools)
+            {
+                <option value="@s">@s</option>
+            }
+        </select>
     </div>
-    <div>
+    <div class="p-2">
         <button class="btn btn-secondary" @onclick="RegisterSingle">報名</button>
         <button class="btn btn-sm right" @onclick="@(()=> SelectMemberDialogOpen = true)">選擇</button>
     </div>
-
     @if (members != null)
     {
         <table class="table mt-4">
@@ -50,6 +58,9 @@
                 <tr>
                     <th class="hand" @onclick="@(()=> { sortBy = ""; })">
                         No<span class='fas @(SetSortIcon("")) right'></span>
+                    </th>
+                    <th class="hand" @onclick="@(()=> { sortBy = ""; })">
+                        地區<span class='fas @(SetSortIcon("School")) right'></span>
                     </th>
                     <th class="hand" @onclick="@(()=> { sortBy = "Gender"; })">
                         性別<span class='fas @(SetSortIcon("Gender")) right'></span>
@@ -66,6 +77,7 @@
                 {
                     <tr>
                         <td class="noselect">@( pos + 1 ) </td>
+                        <td class="noselect">@m.School</td>
                         <td class="noselect">@m.Gender</td>
                         <td class="hand noselect" @onclick="() => OnMemberDialogOpen(m)">
                             @m.Name<br>
@@ -192,6 +204,9 @@
             if (sortBy == "Gender"){
                 result = result.OrderByDescending(x => x.Gender);
             }
+            if (sortBy == "School"){
+                result = result.OrderBy(x => x.School);
+            }
             if (sortBy == "Name"){
                 result = result.OrderBy(x => x.Name, StringComparer.Create(culture, false));
             }
@@ -241,6 +256,10 @@
         if (gender.Any()){
             memberModel.Gender = gender.Single();
         }
+        var school = memberlist.Where(x => x.Name == Name).Select(x => x.School);
+        if (school.Any()){
+            memberModel.School = school.Single();
+        }
     }
     
     protected async Task RegisterSingle(){
@@ -251,6 +270,8 @@
                 Name = memberModel.Name.Trim(),
                 Gender = memberModel.Gender,
                 DateRegistered = DateTime.Now,
+                Remark = "",
+                School = memberModel.School,
                 Attended = false
             };
             
@@ -273,6 +294,7 @@
                 EventId = EventId,
                 Name = m.Name,
                 Gender = m.Gender,
+                School = m.School,
                 DateRegistered = DateTime.Now,
                 Attended = false
             };            
