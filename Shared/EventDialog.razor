@@ -48,6 +48,14 @@
                         <label for="remark" class="col-form-label">備註:</label>                            
                         <input type="text" class="form-control" id="remark" @bind="EventObj.Remark" autocomplete="off">
                     </div>
+                    <div class="form-group">
+                        <label>
+                           <input type="radio" value="0" checked='@(EventObj.Mode == 0)' @onchange='(() => { EventObj.Mode = 0;})'>預設
+                        </label>
+                        <label>
+                           <input type="radio" value="1" checked='@(EventObj.Mode == 1)' @onchange='(() => { EventObj.Mode = 1 ;})'>固定名單
+                        </label>
+                     </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -60,7 +68,7 @@
 
 @code{
 
-    private List<string> Classes {get; set; } = new List<string>(){"壇人班","學人班","正啟班", "活動","課程"};
+    private List<string> Classes {get; set; } = new List<string>(){"壇人班","學人班","正啟班", "活動","課程","會議"};
 
     [Parameter]
     public RegisterApp.Data.Event EventObj { get; set;}

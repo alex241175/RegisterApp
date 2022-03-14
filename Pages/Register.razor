@@ -30,27 +30,34 @@
     </div>
 
     // register input form
-    <div class="mt-2 p-2 input-group">
-        <div class="form-check form-check-inline">
-            <label class="form-check-label" for="inlineRadio1">男</label>
-            <input class="form-check-input" type="radio" id="inlineRadio1" value="男" checked='@(memberModel.Gender == "男")' @onchange='(() => { memberModel.Gender = "男" ;})'>
+    @if (eventObj.Mode == 1){
+        <div class="mt-4 hand" @onclick="OnShowAdd"><small>新增人員</small><span class='mx-2 fas @(SetShowAddIcon())'></span></div>
+    }
+    @if (ShowAdd || eventObj.Mode == 0){
+        <div class="mt-2 p-2 input-group">
+            <div class="form-check form-check-inline">
+                <label class="form-check-label" for="inlineRadio1">男</label>
+                <input class="form-check-input" type="radio" id="inlineRadio1" value="男" checked='@(memberModel.Gender == "男")' @onchange='(() => { memberModel.Gender = "男" ;})'>
+            </div>
+                <div class="form-check form-check-inline">   
+                <label class="form-check-label" for="inlineRadio2">女</label>
+                <input class="form-check-input" type="radio" id="inlineRadio2" value="女" checked='@(memberModel.Gender == "女")' @onchange='(() => { memberModel.Gender = "女" ;})'>
+            </div>    
+            <RadzenAutoComplete Data=@memberlist TextProperty="Name" Change="OnChange" Placeholder="輸入姓名" @bind-Value="memberModel.Name" Style="Width:40%;"/>
+            <select class="form-select ml-2 col-3" style="width:auto;" @bind="memberModel.School">
+                @foreach (string s in RegisterApp.Data.Config.Schools)
+                {
+                    <option value="@s">@s</option>
+                }
+            </select>
+        </div>  
+        <div class="p-2">
+            <button class="btn btn-secondary" @onclick="RegisterSingle">報名</button>
+            <button class="btn btn-sm right" @onclick="@(()=> SelectMemberDialogOpen = true)">選擇</button>
         </div>
-            <div class="form-check form-check-inline">   
-            <label class="form-check-label" for="inlineRadio2">女</label>
-            <input class="form-check-input" type="radio" id="inlineRadio2" value="女" checked='@(memberModel.Gender == "女")' @onchange='(() => { memberModel.Gender = "女" ;})'>
-        </div>    
-        <RadzenAutoComplete Data=@memberlist TextProperty="Name" Change="OnChange" Placeholder="輸入姓名" @bind-Value="memberModel.Name" Style="Width:40%;"/>
-        <select class="form-select ml-2 col-3" style="width:auto;" @bind="memberModel.School">
-            @foreach (string s in RegisterApp.Data.Config.Schools)
-            {
-                <option value="@s">@s</option>
-            }
-        </select>
-    </div>
-    <div class="p-2">
-        <button class="btn btn-secondary" @onclick="RegisterSingle">報名</button>
-        <button class="btn btn-sm right" @onclick="@(()=> SelectMemberDialogOpen = true)">選擇</button>
-    </div>
+    }
+
+    // members list
     @if (members != null)
     {
         <table class="table mt-4">
@@ -68,7 +75,7 @@
                     <th class="hand" @onclick="@(()=> { sortBy = "Name"; })">
                         姓名<span class='fas @(SetSortIcon("Name")) right'></span>
                     </th>
-                    <th></th>
+                    <th> @(eventObj.Mode == 1 ? "出席?" : "" )</th>
                     <th></th>
                 </tr>
             </thead>
@@ -83,26 +90,39 @@
                             @m.Name<br>
                             <span style="font-size:small;">@m.Remark</span>
                         </td>
-                        <td>
-                            @if(ShowMore){
-                                <input class="form-check-input" type="checkbox" checked="@(m.Attended)" @onchange="()=> OnAttend(m)">
+                        <td class="text-center">
+                            @if (eventObj.Mode == 1 ){                                
+                                <div @onclick="() => ToggleAttend(m)"><span class='hand mx-2 @(SetAttendIcon(m.Attend))'></span></div>
+                            }else if(ShowMore && eventObj.Mode == 0 ){
+                                <input class="form-check-input" type="checkbox" checked="@(m.Attend == 1)" @onchange="()=> OnAttend(m)">
                             }
                         </td>
                         <td>
-                            <button @onclick="() => OnDeleteDialogOpen(m)" class="right"><span class="oi oi-x"></span></button>
+                            @if (eventObj.Mode ==0){
+                                <button @onclick="() => OnDeleteDialogOpen(m)" class="right"><span class="oi oi-x"></span></button>
+                            }
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
-        <div>
-            <span>男： @filteredMembers.Where( x=>x.Gender == "男").Count()</span>
-            <span class="mx-2">女： @filteredMembers.Where( x=>x.Gender == "女").Count()</span>
-            <span>共： @filteredMembers.Count()</span>
-        </div>
+        @if (eventObj.Mode == 0){
+            <div>
+                <span>男： @filteredMembers.Where( x=>x.Gender == "男").Count()</span>
+                <span class="mx-2">女： @filteredMembers.Where( x=>x.Gender == "女").Count()</span>
+                <span>共： @filteredMembers.Count()</span>
+            </div>
+        }else{
+             <div>
+                <span>（出席）男： @filteredMembers.Where(x=> x.Gender == "男" && x.Attend == 1).Count()</span>
+                <span class="mx-2">女： @filteredMembers.Where( x=> x.Gender == "女" && x.Attend == 1).Count()</span>
+                <span>共： @filteredMembers.Where(x=> x.Attend == 1).Count()</span>
+            </div>
+        }
     }
-
-    <div class="mt-4 hand" @onclick="OnShowMore"><small>掛號</small><span class='mx-2 fas @(SetShowMoreIcon())'></span></div>
+    @if (eventObj.Mode == 0){
+        <div class="mt-4 hand" @onclick="OnShowMore"><small>掛號</small><span class='mx-2 fas @(SetShowMoreIcon())'></span></div>
+    }
 
 }else{
 
@@ -111,7 +131,7 @@
 
 @if (MemberDialogOpen)
 {
-    <MemberDialog member="member" OnClose="OnMemberDialogClose" OnSave="OnSave" />
+    <MemberDialog member="member" OnClose="OnMemberDialogClose" OnSave="OnSave" OnDelete="OnMemberDelete" />
 }
 @if (DeleteDialogOpen)
 {
@@ -161,6 +181,7 @@
     private bool SelectMemberDialogOpen { get; set; }
     private string Text {get;set;}
     private bool ShowMore {get;set;}
+    private bool ShowAdd {get;set;}
     private bool IsNotOver {get;set;} = true;
     private string filter = "全";
     private string sortBy = "";
@@ -181,7 +202,7 @@
         if (eventObj.Start < DateTime.Today){
             IsNotOver = false;
         }
-        members = await DbContext.EventMembers.Where(x => x.EventId == EventId).ToListAsync();
+        members = await DbContext.EventMembers.Where(x => x.EventId == EventId).OrderBy(x => x.School).ThenByDescending(x => x.Gender).ToListAsync();
         //memberlist = (from m in DbContext.EventMembers select m).Distinct().ToList();
         GetMemberList(); //for AutoComplete
         memberModel.Gender = "男";
@@ -196,10 +217,10 @@
         get {
             var result = members.AsEnumerable();
             if (filter == "出"){
-                result = result.Where( x => x.Attended == true);
+                result = result.Where( x => x.Attend == 1);
             }
             if (filter == "缺"){
-                result = result.Where( x => x.Attended == false);
+                result = result.Where( x => x.Attend == 0);
             }
             if (sortBy == "Gender"){
                 result = result.OrderByDescending(x => x.Gender);
@@ -227,6 +248,15 @@
     public string SetShowMoreIcon()
     {
         if (ShowMore)
+        {
+            return "fa-sort-up";
+        }else{     
+            return "fa-sort-down";
+        }
+    }
+    public string SetShowAddIcon()
+    {
+        if (ShowAdd)
         {
             return "fa-sort-up";
         }else{     
@@ -272,7 +302,7 @@
                 DateRegistered = DateTime.Now,
                 Remark = "",
                 School = memberModel.School,
-                Attended = false
+                Attend = 0
             };
             
             await DbContext.EventMembers.AddAsync(obj);
@@ -296,7 +326,7 @@
                 Gender = m.Gender,
                 School = m.School,
                 DateRegistered = DateTime.Now,
-                Attended = false
+                Attend = 0
             };            
             await DbContext.EventMembers.AddAsync(obj);
             await DbContext.SaveChangesAsync();
@@ -357,6 +387,10 @@
     {
         ShowMore = !ShowMore;
     }
+    private void OnShowAdd()
+    {
+        ShowAdd = !ShowAdd;
+    }
 
     private async Task OnSave()
     {
@@ -372,15 +406,54 @@
       
         StateHasChanged();
     }
+    private async Task OnMemberDelete()
+    {
+        MemberDialogOpen = false;
+      
+        EventMember obj = await DbContext.EventMembers.FindAsync(member.EventMemberId);
+        DbContext.EventMembers.Remove(obj);
+        await DbContext.SaveChangesAsync();
+        //update client
+        members.Remove(member);       
+        StateHasChanged();
+    }
 
     private async Task OnAttend(EventMember m){
         //toggle attendance status
         EventMember obj = await DbContext.EventMembers.FindAsync(m.EventMemberId);
-        obj.Attended = !obj.Attended;
+        obj.Attend = obj.Attend switch{
+            0 => 1,
+            1 => 0
+        };
         DbContext.EventMembers.Update(obj);
         await DbContext.SaveChangesAsync();
         //update client     
         StateHasChanged();
+    }
+
+    private async Task ToggleAttend(EventMember m){
+        //toggle attendance status
+        EventMember obj = await DbContext.EventMembers.FindAsync(m.EventMemberId);
+        var result = obj.Attend switch{
+            0 => 1,
+            1 => 2,
+            2 => 0
+        };        
+        obj.Attend = result;
+        DbContext.EventMembers.Update(obj);
+        await DbContext.SaveChangesAsync();
+        //update client     
+        StateHasChanged();
+    }
+
+    public string SetAttendIcon(int status)
+    {
+        var result = status switch{
+            0 => "far fa-square",
+            1 => "fas fa-check",
+            2 => "fas fa-times"
+        };
+        return result;
     }
 
     protected async Task OnExportExcel(){

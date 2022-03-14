@@ -18,6 +18,7 @@ namespace RegisterApp.Data
         public string? Service {get;set;}
         public string? Remark{get;set;}
         public string? Entity{get;set;}
+        public int Mode{get;set;}   // default 0, preset members -  1 
         public virtual ICollection<EventMember>? EventMembers { get; set; }
         public Event DeepCopy()
         {
@@ -33,6 +34,7 @@ namespace RegisterApp.Data
             temp.Service = this.Service;
             temp.Remark = this.Remark;
             temp.Entity = this.Entity;
+            temp.Mode = this.Mode;
             temp.EventMembers = this.EventMembers;
             return temp;
         }

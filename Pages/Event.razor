@@ -59,7 +59,8 @@
                             <td>
                                 <button class="btn-sm btn-secondary" @onclick="() => CopyLink(e.EventId)">連接</button>
                                 <button class="btn-sm btn-secondary" @onclick="() => OnRegister(e.EventId)">報名</button>
-                                <button class="btn-sm btn-secondary" @onclick="() => OnDelete(e)">刪除</button>
+                                <button class="btn-sm btn-secondary" @onclick="() => OnDuplicate(e)">復制</button>
+                                <button class="btn-sm btn-secondary" @onclick="() => OnDeleteDialogOpen(e)">刪除</button>
                             </td>
                         </tr>
                     }
@@ -76,15 +77,21 @@
     <TextDialog Text='@Text' OnClose="OnTextDialogClose" />
 }
 
+@if (DeleteDialogOpen)
+{
+    <DeleteDialog ConfirmationMessage='@("是不是要刪除[" + eventObj.Title + "]?")' OnClose="OnDeleteDialogClose" OnDelete="OnDelete" />
+}
+
 @code 
 {
     private bool TextDialogOpen { get; set; }
+    private bool DeleteDialogOpen { get; set; }
     private string Text {get;set;}
     private ClaimsPrincipal? User;
     private string? Role;
     public bool EventDialogOpen { get; set; }
 
-     private DateTime filterStart = DateTime.Today;
+    private DateTime filterStart = DateTime.Today;
     private string filterTitle = "";
 
     private RegisterApp.Data.Event eventObj = new RegisterApp.Data.Event(){
@@ -94,7 +101,8 @@
         End = null,
         Location = "",
         Remark = "",
-        Entity = "士C"
+        Entity = "士C",
+        Mode = 0
     };
      private RegisterApp.Data.Event emptyEvent = new RegisterApp.Data.Event(){
         Class = "課程",
@@ -103,7 +111,8 @@
         End = null,
         Location = "",
         Remark = "",
-        Entity = "士C"
+        Entity = "士C",
+        Mode  = 0
     };
 
     private List<RegisterApp.Data.Event> events = default!;
@@ -166,14 +175,57 @@
         StateHasChanged();
 
     }
-
-    protected async Task OnDelete(RegisterApp.Data.Event e){
+    protected async Task OnDuplicate(RegisterApp.Data.Event e){
   
-        eventObj = await DbContext.Events.FindAsync(e.EventId);
+        // copy event
+        RegisterApp.Data.Event obj = new (){
+            Class = e.Class,
+            Title = "*" + e.Title,
+            Start = e.Start,
+            End  = e.End,
+            Location = e.Location,
+            Head = e.Head,
+            Speaker = e.Speaker,
+            Service = e.Service,
+            Remark = e.Remark,
+            Entity = e.Entity,
+            Mode = e.Mode
+        };        
+        await DbContext.Events.AddAsync(obj);
+        await DbContext.SaveChangesAsync();
+
+        // copy Member
+        var members = await DbContext.EventMembers.Where(x => x.EventId == e.EventId).ToListAsync();
+        foreach (var member in members){
+            EventMember m = new(){
+                EventId = obj.EventId,
+                Name = member.Name,
+                Gender = member.Gender,
+                School = member.School,
+                Remark = "",
+                DateRegistered = DateTime.Now,
+                Attend = 0
+            };
+            await DbContext.EventMembers.AddAsync(m);
+        }
+        await DbContext.SaveChangesAsync();
+        events.Add(obj);
+        events.OrderBy(x => x.Start);
+        StateHasChanged();     
+
+    }
+    protected async Task OnDelete(){
+  
+        DeleteDialogOpen = false;
+        // delete events
+        eventObj = await DbContext.Events.FindAsync(eventObj.EventId);
         DbContext.Events.Remove(eventObj);
+        // delete members
+        var range = DbContext.EventMembers.Where(x => x.EventId == eventObj.EventId);
+        DbContext.EventMembers.RemoveRange(range);        
         await DbContext.SaveChangesAsync();
         //update client
-        events.Remove(e);        
+        events.Remove(eventObj);        
         StateHasChanged();
 
     }
@@ -209,6 +261,16 @@
     protected void OnTextDialogClose()
     {
         TextDialogOpen = false;
+        StateHasChanged();
+    }
+    protected void OnDeleteDialogOpen(RegisterApp.Data.Event e){
+        eventObj = e;
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+    protected void OnDeleteDialogClose()
+    {
+        DeleteDialogOpen = false;
         StateHasChanged();
     }
 

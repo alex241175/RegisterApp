@@ -15,7 +15,7 @@ namespace RegisterApp.Data
         public string? School { get; set; }
         public string? Remark { get; set; }
         public DateTime DateRegistered {get;set;}
-        public bool Attended {get;set;}
+        public int Attend {get;set;}
 
     }
       public static class Config

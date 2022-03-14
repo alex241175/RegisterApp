@@ -32,6 +32,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @onclick=@ModalSave>更新</button>
+                <button type="button" class="btn btn-primary" @onclick=@ModalDelete>刪除</button>
                 <button type="button" class="btn btn-primary" @onclick=@ModalCancel>取消</button>
             </div>
         </div>
@@ -46,10 +47,16 @@
     public EventCallback<bool> OnClose {get;set;}
     [Parameter]
     public EventCallback<EventMember> OnSave {get;set;}
+    [Parameter]
+    public EventCallback<EventMember> OnDelete {get;set;}
 
     private Task ModalCancel()
     {
         return OnClose.InvokeAsync(false);
+    }
+    private Task ModalDelete()
+    {
+        return OnDelete.InvokeAsync(member);
     }
     private Task ModalSave()
     {
