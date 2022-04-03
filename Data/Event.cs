@@ -19,6 +19,7 @@ namespace RegisterApp.Data
         public string? Remark{get;set;}
         public string? Entity{get;set;}
         public int Mode{get;set;}   // default 0, preset members -  1 
+        public bool? HideDate {get;set;} = false;
         public virtual ICollection<EventMember>? EventMembers { get; set; }
         public Event DeepCopy()
         {

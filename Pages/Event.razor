@@ -189,7 +189,8 @@
             Service = e.Service,
             Remark = e.Remark,
             Entity = e.Entity,
-            Mode = e.Mode
+            Mode = e.Mode,
+            HideDate = e.HideDate
         };        
         await DbContext.Events.AddAsync(obj);
         await DbContext.SaveChangesAsync();

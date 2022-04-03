@@ -48,6 +48,10 @@
                         <label for="remark" class="col-form-label">備註:</label>                            
                         <input type="text" class="form-control" id="remark" @bind="EventObj.Remark" autocomplete="off">
                     </div>
+                     <div class="form-group">
+                        <label for="private" class="col-form-label">隱藏日期:</label>                            
+                        <input id="private" type="checkbox" checked="@EventObj.HideDate" @onclick="CheckChanged">
+                    </div>
                     <div class="form-group">
                         <label>
                            <input type="radio" value="0" checked='@(EventObj.Mode == 0)' @onchange='(() => { EventObj.Mode = 0;})'>預設
@@ -85,5 +89,9 @@
     private Task ModalSave()
     {
         return OnSave.InvokeAsync(EventObj);
+    }
+    private void CheckChanged()
+    {
+        EventObj.HideDate = !EventObj.HideDate;
     }
 }

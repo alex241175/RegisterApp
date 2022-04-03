@@ -9,7 +9,11 @@
     // page header
     <PageTitle>報名：@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))</PageTitle>
     <HeadContent>
-    <meta property="og:title" content='@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))' />
+    @if (!(bool)eventObj.HideDate){
+        <meta property="og:title" content='@( "[" + eventObj.Class + "] " + eventObj.Title + " " + eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mm tt") + " " + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1))' />
+    } else{
+        <meta property="og:title" content='@eventObj.Title' />    
+    }
     <meta property="og:description" content=">>請點進去報名" />
     <meta property="og:image" content="" />
     <meta property="og:type" content="website" />
@@ -20,11 +24,15 @@
     // Event information
     <div class="card">
         <div class="card-body">
-            <h4>@("[" + eventObj.Class + "] " + eventObj.Title)</h4>
-            <span>@(eventObj.Start != null ? eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mmtt") : "")</span>
-            <span>@(eventObj.End != null ? " 至 " + eventObj.End.Value.AddHours(8).ToString("h:mmtt") : "")</span>
-            <span>@(eventObj.Start != null ? "(" + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1) + ")" : "")</span>
-            <span>@(eventObj.Location)</span><br>
+            @if (!(bool)eventObj.HideDate){
+                <h4>@("[" + eventObj.Class + "] " + eventObj.Title)</h4>
+                <span>@(eventObj.Start != null ? eventObj.Start.Value.AddHours(8).ToString("dd/MM/yy h:mmtt") : "")</span>
+                <span>@(eventObj.End != null ? " 至 " + eventObj.End.Value.AddHours(8).ToString("h:mmtt") : "")</span>
+                <span>@(eventObj.Start != null ? "(" + eventObj.Start.Value.AddHours(8).ToString("ddd", new CultureInfo("zh-TW")).Substring(1) + ")" : "")</span>
+                <span>@(eventObj.Location)</span><br>
+            }else{
+                <h4>@eventObj.Title</h4>
+            }
             <small>@eventObj.Remark</small>
         </div>
     </div>
