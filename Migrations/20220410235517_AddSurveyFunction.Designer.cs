@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RegisterApp.Data;
 
@@ -10,9 +11,10 @@ using RegisterApp.Data;
 namespace RegisterApp.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20220410235517_AddSurveyFunction")]
+    partial class AddSurveyFunction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.1");
@@ -57,22 +59,10 @@ namespace RegisterApp.Migrations
                     b.Property<DateTime?>("Start")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Survey1Default")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Survey1Option")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Survey1Question")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Survey2Default")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Survey2Option")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Survey2Question")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
@@ -113,9 +103,6 @@ namespace RegisterApp.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Survey1Answer")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Survey2Answer")
                         .HasColumnType("TEXT");
 
                     b.HasKey("EventMemberId");

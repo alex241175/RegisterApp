@@ -18,8 +18,16 @@ namespace RegisterApp.Data
         public string? Service {get;set;}
         public string? Remark{get;set;}
         public string? Entity{get;set;}
-        public int Mode{get;set;}   // default 0, preset members -  1 
-        public bool? HideDate {get;set;} = false;
+        public int Mode{get;set;}   // default 0, preset members -  1 是否固定人員
+        public bool? HideDate {get;set;} = false; // 不是報名班會，如要收集一些資料
+        public string? Survey1Question {get;set;}
+        public string? Survey1Option {get;set;}
+        public string? Survey1Default {get;set;}
+        public string? Survey2Question {get;set;}
+        public string? Survey2Option {get;set;}
+        public string? Survey2Default {get;set;}
+        
+        
         public virtual ICollection<EventMember>? EventMembers { get; set; }
         public Event DeepCopy()
         {

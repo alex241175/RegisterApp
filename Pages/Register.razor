@@ -139,7 +139,7 @@
 
 @if (MemberDialogOpen)
 {
-    <MemberDialog member="member" OnClose="OnMemberDialogClose" OnSave="OnSave" OnDelete="OnMemberDelete" />
+    <MemberDialog member="member" eventObj="eventObj" OnClose="OnMemberDialogClose" OnSave="OnSave" OnDelete="OnMemberDelete" />
 }
 @if (DeleteDialogOpen)
 {
@@ -170,6 +170,28 @@
         </div>
 
     </div>
+    @if (!string.IsNullOrEmpty(eventObj.Survey1Question)){
+        <div class="mt-2 p-2 input-group">
+            <label class="mr-4">@eventObj.Survey1Question</label>
+            @foreach (string opt in @eventObj.Survey1Option.Split(',')){
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label" >@opt</label>
+                    <input class="form-check-input" type="radio" value="@opt" checked='@(filter == opt)' @onchange='(() => { filter = opt ;})'>
+                </div>
+            }
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(eventObj.Survey2Question)){
+        <div class="mt-2 p-2 input-group">
+            <label class="mr-4">@eventObj.Survey2Question</label>
+            @foreach (string opt in @eventObj.Survey2Option.Split(',')){
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label" >@opt</label>
+                    <input class="form-check-input" type="radio" value="@opt" checked='@(filter == opt)' @onchange='(() => { filter = opt ;})'>
+                </div>
+            }
+        </div>
+    }
     <div class="mt-2">
         <button class="btn btn-secondary" @onclick="OnExportCsv">輸出CSV</button>
     </div>
@@ -238,6 +260,20 @@
             }
             if (sortBy == "Name"){
                 result = result.OrderBy(x => x.Name, StringComparer.Create(culture, false));
+            }
+            @if (!string.IsNullOrEmpty(eventObj.Survey1Question)){
+                @foreach (string opt in @eventObj.Survey1Option.Split(',')){
+                    if (filter == opt){
+                        result = result.Where( x => x.Survey1Answer == opt);
+                    }
+                }
+            }
+            @if (!string.IsNullOrEmpty(eventObj.Survey2Question)){
+                @foreach (string opt in @eventObj.Survey2Option.Split(',')){
+                    if (filter == opt){
+                        result = result.Where( x => x.Survey2Answer == opt);
+                    }
+                }
             }
             return result.ToList();
         }
@@ -312,6 +348,14 @@
                 School = memberModel.School,
                 Attend = 0
             };
+
+            if (!string.IsNullOrEmpty(eventObj.Survey1Default)){
+                obj.Survey1Answer = eventObj.Survey1Default;
+            }
+            if (!string.IsNullOrEmpty(eventObj.Survey2Default)){
+                obj.Survey2Answer = eventObj.Survey2Default;
+            }
+            
             
             await DbContext.EventMembers.AddAsync(obj);
             await DbContext.SaveChangesAsync();
@@ -335,7 +379,13 @@
                 School = m.School,
                 DateRegistered = DateTime.Now,
                 Attend = 0
-            };            
+            }; 
+            if (!string.IsNullOrEmpty(eventObj.Survey1Default)){
+                obj.Survey1Answer = eventObj.Survey1Default;
+            }
+            if (!string.IsNullOrEmpty(eventObj.Survey2Default)){
+                obj.Survey2Answer = eventObj.Survey2Default;
+            }           
             await DbContext.EventMembers.AddAsync(obj);
             await DbContext.SaveChangesAsync();
             //update client
@@ -493,13 +543,28 @@
     protected async void OnExportCsv()
     {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine("Id, Gender, Name");
+        string line = "";
+        line = "Id, 性別, 姓名,地區,";
+        if (!string.IsNullOrEmpty(eventObj.Survey1Question)){
+            line += eventObj.Survey1Question + ",";
+        }
+        if (!string.IsNullOrEmpty(eventObj.Survey2Question)){
+            line += eventObj.Survey2Question + ",";
+        }
+        stringBuilder.AppendLine(line);
         @foreach (var (m , pos) in members.Select((value, i) => (value, i)))
         {
-           stringBuilder.AppendLine($"{pos + 1 }, {m.Gender}, {m.Name}");
+           line = $"{pos + 1 }, {m.Gender}, {m.Name},{m.School},";
+           if (!string.IsNullOrEmpty(eventObj.Survey1Question)){
+                line += m.Survey1Answer + ",";
+           }
+           if (!string.IsNullOrEmpty(eventObj.Survey2Question)){
+                line += m.Survey2Answer + ",";
+           }
+           stringBuilder.AppendLine(line);
         }
         var content = stringBuilder.ToString();
-        string fileName = eventObj.Class + "-" + eventObj.Title + eventObj.Start.Value.AddHours(8).ToString("yyyyMMddyhhmm") + ".csv";
+        string fileName = eventObj.Class + "-" + eventObj.Title + eventObj.Start.Value.AddHours(8).ToString("yyyyMMddhhmmss") + ".csv";
         await JSRuntime.InvokeAsync<object>("saveAsCsv", fileName, content);
     }
 

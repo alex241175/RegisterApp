@@ -24,7 +24,29 @@
                             }
                         </select>
                     </div>
-                    <div class="form-group mt-2">
+                    @if (!string.IsNullOrEmpty(eventObj.Survey1Question)){
+                        <label class="mr-4">@eventObj.Survey1Question</label>
+                        <div class="mt-2 form-group">
+                            @foreach (string opt in @eventObj.Survey1Option.Split(',')){
+                                <div class="form-check form-check-inline">
+                                    <label class="form-check-label">@opt</label>
+                                    <input class="form-check-input" type="radio" value="@opt" checked='@(member.Survey1Answer == opt)' @onchange='(() => { member.Survey1Answer = opt ;})'>
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(eventObj.Survey2Question)){
+                        <label class="mr-4">@eventObj.Survey2Question</label>
+                        <div class="mt-2 input-group">
+                            @foreach (string opt in @eventObj.Survey2Option.Split(',')){
+                                <div class="form-check form-check-inline">
+                                    <label class="form-check-label">@opt</label>
+                                    <input class="form-check-input" type="radio" value="@opt" checked='@(member.Survey2Answer == opt)' @onchange='(() => { member.Survey2Answer = opt ;})'>
+                                </div>
+                            }
+                        </div>
+                    }
+                    <div class="form-group mt-4">
                         <label>備註</label>
                         <input type="text" size="10" class="form-control" @bind="member.Remark">
                     </div>
@@ -32,7 +54,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @onclick=@ModalSave>更新</button>
-                <button type="button" class="btn btn-primary" @onclick=@ModalDelete>刪除</button>
+                @if (eventObj.Mode == 1){
+                    <button type="button" class="btn btn-primary" @onclick=@ModalDelete>刪除</button>
+                }
                 <button type="button" class="btn btn-primary" @onclick=@ModalCancel>取消</button>
             </div>
         </div>
@@ -42,6 +66,8 @@
 @code{
     [Parameter]
     public EventMember member { get; set;}
+    [Parameter]
+    public Event eventObj { get; set;}
 
     [Parameter]
     public EventCallback<bool> OnClose {get;set;}

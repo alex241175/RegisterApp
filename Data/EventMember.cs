@@ -16,6 +16,8 @@ namespace RegisterApp.Data
         public string? Remark { get; set; }
         public DateTime DateRegistered {get;set;}
         public int Attend {get;set;}
+        public string? Survey1Answer {get;set;}
+        public string? Survey2Answer {get;set;}
 
     }
       public static class Config
